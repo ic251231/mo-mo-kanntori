@@ -1,0 +1,1089 @@
+```html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マリオカート風 アイテムルーレット</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px 0;
+            min-height: 100vh;
+            background-color: #0f172a;
+            background-image:
+                radial-gradient(circle at 50% 0%, #1e293b 0%, transparent 50%),
+                radial-gradient(circle at 50% 100%, #1e293b 0%, transparent 50%);
+            color: white;
+            font-family: Arial, sans-serif;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0 0 20px;
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #facc15;
+            text-shadow: 0 0 10px rgba(234, 179, 8, 0.6);
+            text-align: center;
+        }
+
+        /* 順位選択 */
+        .rank-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #d1d5db;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .rank-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .rank-label {
+            cursor: pointer;
+        }
+
+        .rank-radio {
+            display: none;
+        }
+
+        .rank-button {
+            width: 70px;
+            height: 58px;
+            border-radius: 18px;
+            background: #1f2937;
+            border: 3px solid #4b5563;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-size: 20px;
+            font-weight: 900;
+
+            transition: 0.15s;
+        }
+
+        .rank-radio:checked + .rank-button {
+            background: #2563eb;
+            border-color: #93c5fd;
+            transform: scale(1.05);
+        }
+
+        /* ルーレットの枠 */
+        .item-box-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            padding: 8px;
+            border-radius: 32px;
+
+            background: linear-gradient(
+                45deg,
+                #ff0000,
+                #ffff00,
+                #00ff00,
+                #00ffff,
+                #0000ff,
+                #ff00ff,
+                #ff0000
+            );
+
+            background-size: 400% 400%;
+            animation: rainbow-bg 2.5s linear infinite;
+
+            box-shadow:
+                0 0 30px rgba(255, 255, 255, 0.2),
+                inset 0 0 25px rgba(255, 255, 255, 0.8);
+
+            margin-bottom: 30px;
+        }
+
+        @keyframes rainbow-bg {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .item-box-inner {
+            width: 100%;
+            height: 100%;
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+
+            box-shadow: inset 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* ルーレット */
+        .slot-container {
+            display: flex;
+            flex-direction: column;
+            will-change: transform;
+        }
+
+        .is-spinning-fast {
+            filter: blur(3px);
+        }
+
+        .slot-item {
+            width: 264px;
+            height: 264px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            flex-shrink: 0;
+            padding: 12px;
+        }
+
+        .slot-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+
+            filter:
+                drop-shadow(0px 8px 10px rgba(0, 0, 0, 0.3));
+        }
+
+        /* SPINボタン */
+        .button-area {
+            width: 100%;
+            max-width: 330px;
+            padding: 0 15px;
+        }
+
+        #start-btn {
+            width: 100%;
+            padding: 16px;
+
+            background: linear-gradient(
+                to bottom,
+                #fb923c,
+                #ea580c
+            );
+
+            color: white;
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 3px;
+
+            border-radius: 18px;
+            border: 3px solid #fdba74;
+
+            box-shadow:
+                0 8px 0 #c2410c,
+                0 12px 20px rgba(0, 0, 0, 0.4);
+
+            cursor: pointer;
+
+            transition: 0.1s;
+        }
+
+        #start-btn:hover {
+            background: linear-gradient(
+                to bottom,
+                #fdba74,
+                #f97316
+            );
+        }
+
+        #start-btn:active {
+            transform: translateY(4px);
+
+            box-shadow:
+                0 2px 0 #c2410c,
+                0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        #start-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 28px;
+            }
+
+            .item-box-wrapper {
+                width: 280px;
+                height: 280px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>ITEM ROULETTE</h1>
+
+    <!-- 順位選択 -->
+    <div>
+        <div class="rank-title">
+            現在の順位を選択
+        </div>
+
+        <div class="rank-buttons">
+
+            <label class="rank-label">
+                <input
+                    type="radio"
+                    name="rank"
+                    value="1"
+                    class="rank-radio"
+                    checked
+                >
+                <div class="rank-button">
+                    1位
+                </div>
+            </label>
+
+            <label class="rank-label">
+                <input
+                    type="radio"
+                    name="rank"
+                    value="2"
+                    class="rank-radio"
+                >
+                <div class="rank-button">
+                    2位
+                </div>
+            </label>
+
+            <label class="rank-label">
+                <input
+                    type="radio"
+                    name="rank"
+                    value="3"
+                    class="rank-radio"
+                >
+                <div class="rank-button">
+                    3位
+                </div>
+            </label>
+
+            <label class="rank-label">
+                <input
+                    type="radio"
+                    name="rank"
+                    value="4"
+                    class="rank-radio"
+                >
+                <div class="rank-button">
+                    4位
+                </div>
+            </label>
+
+        </div>
+    </div>
+
+
+    <!-- ルーレット本体 -->
+    <div class="item-box-wrapper">
+
+        <div class="item-box-inner">
+
+            <div
+                class="slot-container"
+                id="slot-container"
+            ></div>
+
+        </div>
+
+    </div>
+
+
+    <!-- SPINボタン -->
+    <div class="button-area">
+
+        <button id="start-btn">
+            SPIN!
+        </button>
+
+    </div>
+
+
+    <script>
+
+        /*
+         * アイテム画像
+         *
+         * HTMLファイルと同じフォルダに
+         * 画像を入れてください。
+         */
+
+        const itemImagePaths = {
+
+            redShell:
+                "akakoura.jpeg",
+
+            blueShell:
+                "aokoura.jpeg",
+
+            banana:
+                "banana.jpeg",
+
+            gesso:
+                "gesso-.jpeg",
+
+            mushroom:
+                "kinoko.jpeg",
+
+            killer:
+                "kira-.jpeg",
+
+            horn:
+                "kurakusyonn.jpeg",
+
+            greenShell:
+                "midorikoura.jpeg",
+
+            star:
+                "suta-.jpeg"
+        };
+
+
+        /*
+         * アイテムの名前
+         */
+
+        const itemNames = {
+
+            redShell:
+                "赤甲羅",
+
+            blueShell:
+                "青甲羅",
+
+            banana:
+                "バナナ",
+
+            gesso:
+                "ゲッソー",
+
+            mushroom:
+                "キノコ",
+
+            killer:
+                "キラー",
+
+            horn:
+                "クラクション",
+
+            greenShell:
+                "緑甲羅",
+
+            star:
+                "スター"
+        };
+
+
+        /*
+         * 全アイテム
+         */
+
+        const allItemKeys =
+            Object.keys(itemImagePaths);
+
+
+        /*
+         * 順位ごとの出現率
+         *
+         * 数字は「重み」です。
+         *
+         * 1位
+         * バナナ 4 = 40%
+         * 緑甲羅 3 = 30%
+         * クラクション 2 = 20%
+         * キノコ 1 = 10%
+         *
+         * スターは設定していないので0%
+         */
+
+        const rankSettings = {
+
+            /* 1位 */
+            1: {
+                normal: [
+                    ["banana", 4],
+                    ["greenShell", 3],
+                    ["horn", 2],
+                    ["mushroom", 1]
+                ]
+            },
+
+
+            /* 2位 */
+            2: {
+                normal: [
+                    ["redShell", 3],
+                    ["banana", 2],
+                    ["mushroom", 2],
+                    ["greenShell", 2],
+                    ["horn", 1]
+                ]
+            },
+
+
+            /* 3位 */
+            3: {
+                normal: [
+                    ["mushroom", 5],
+                    ["star", 5],
+                    ["killer", 3],
+                    ["redShell", 3],
+                    ["blueShell", 2],
+                    ["gesso", 2]
+                ]
+            },
+
+
+            /* 4位 */
+            4: {
+                normal: [
+                    ["star", 7],
+                    ["killer", 5],
+                    ["blueShell", 4],
+                    ["gesso", 2],
+                    ["mushroom", 2]
+                ]
+            }
+        };
+
+
+        /*
+         * HTMLの要素
+         */
+
+        const slotContainer =
+            document.getElementById(
+                "slot-container"
+            );
+
+        const startBtn =
+            document.getElementById(
+                "start-btn"
+            );
+
+
+        /*
+         * 1個のアイテムの高さ
+         */
+
+        const itemHeight = 264;
+
+
+        /*
+         * ルーレット中かどうか
+         */
+
+        let isSpinning = false;
+
+
+        /*
+         * 最初に表示するアイテム
+         *
+         * coinは使わないのでバナナにする
+         */
+
+        let currentItemKey = "banana";
+
+
+        /*
+         * 音
+         */
+
+        let audioCtx = null;
+
+
+        /*
+         * 最初の表示
+         */
+
+        function init() {
+
+            renderSlot([
+                currentItemKey
+            ]);
+
+        }
+
+
+        /*
+         * アイテムを表示
+         */
+
+        function renderSlot(keysArray) {
+
+            slotContainer.innerHTML =
+                keysArray.map(key => {
+
+                    return `
+                        <div class="slot-item">
+                            <img
+                                src="${itemImagePaths[key]}"
+                                alt="${itemNames[key]}"
+                            >
+                        </div>
+                    `;
+
+                }).join("");
+
+        }
+
+
+        /*
+         * 出現率からアイテムを選ぶ
+         */
+
+        function weightedDraw(weightedItems) {
+
+            const totalWeight =
+                weightedItems.reduce(
+                    (sum, entry) =>
+                        sum + entry[1],
+                    0
+                );
+
+            let random =
+                Math.random() * totalWeight;
+
+
+            for (
+                const [itemKey, weight]
+                of weightedItems
+            ) {
+
+                if (random < weight) {
+
+                    return itemKey;
+
+                }
+
+                random -= weight;
+
+            }
+
+            return weightedItems[
+                weightedItems.length - 1
+            ][0];
+
+        }
+
+
+        /*
+         * 順位からアイテムを決める
+         */
+
+        function determineWinningItem(rank) {
+
+            return weightedDraw(
+                rankSettings[rank].normal
+            );
+
+        }
+
+
+        /*
+         * 音を初期化
+         */
+
+        function initAudio() {
+
+            try {
+
+                if (!audioCtx) {
+
+                    audioCtx =
+                        new (
+                            window.AudioContext ||
+                            window.webkitAudioContext
+                        )();
+
+                }
+
+                if (
+                    audioCtx.state ===
+                    "suspended"
+                ) {
+
+                    audioCtx.resume();
+
+                }
+
+            } catch (e) {}
+
+        }
+
+
+        /*
+         * ルーレットが回っているときの音
+         */
+
+        function playTickSound() {
+
+            if (!audioCtx) return;
+
+            try {
+
+                const t =
+                    audioCtx.currentTime;
+
+                const osc =
+                    audioCtx.createOscillator();
+
+                const gain =
+                    audioCtx.createGain();
+
+                osc.type = "square";
+
+                osc.frequency.setValueAtTime(
+                    900,
+                    t
+                );
+
+                osc.frequency.exponentialRampToValueAtTime(
+                    500,
+                    t + 0.03
+                );
+
+                gain.gain.setValueAtTime(
+                    0.08,
+                    t
+                );
+
+                gain.gain.exponentialRampToValueAtTime(
+                    0.01,
+                    t + 0.04
+                );
+
+                osc.connect(gain);
+
+                gain.connect(
+                    audioCtx.destination
+                );
+
+                osc.start(t);
+
+                osc.stop(
+                    t + 0.04
+                );
+
+            } catch (e) {}
+
+        }
+
+
+        /*
+         * 結果が出たときの音
+         */
+
+        function playFanfareSound() {
+
+            if (!audioCtx) return;
+
+            try {
+
+                const t =
+                    audioCtx.currentTime;
+
+                const notes = [
+
+                    {
+                        freq: 523.25,
+                        time: 0
+                    },
+
+                    {
+                        freq: 659.25,
+                        time: 0.08
+                    },
+
+                    {
+                        freq: 783.99,
+                        time: 0.16
+                    },
+
+                    {
+                        freq: 1046.50,
+                        time: 0.24
+                    }
+
+                ];
+
+
+                notes.forEach(note => {
+
+                    const osc =
+                        audioCtx.createOscillator();
+
+                    const gain =
+                        audioCtx.createGain();
+
+                    osc.type =
+                        "triangle";
+
+                    osc.frequency.value =
+                        note.freq;
+
+                    gain.gain.setValueAtTime(
+                        0,
+                        t + note.time
+                    );
+
+                    gain.gain.linearRampToValueAtTime(
+                        0.2,
+                        t + note.time + 0.02
+                    );
+
+                    gain.gain.exponentialRampToValueAtTime(
+                        0.01,
+                        t + note.time + 0.4
+                    );
+
+                    osc.connect(gain);
+
+                    gain.connect(
+                        audioCtx.destination
+                    );
+
+                    osc.start(
+                        t + note.time
+                    );
+
+                    osc.stop(
+                        t + note.time + 0.5
+                    );
+
+                });
+
+            } catch (e) {}
+
+        }
+
+
+        /*
+         * ルーレット開始
+         */
+
+        function startRoulette() {
+
+            if (isSpinning) return;
+
+            isSpinning = true;
+
+            startBtn.disabled = true;
+
+
+            /*
+             * 順位ボタンを一時的に無効化
+             */
+
+            const radios =
+                document.querySelectorAll(
+                    'input[name="rank"]'
+                );
+
+            radios.forEach(
+                radio => {
+                    radio.disabled = true;
+                }
+            );
+
+
+            initAudio();
+
+
+            /*
+             * 現在の順位を取得
+             */
+
+            const currentRank =
+                parseInt(
+                    document.querySelector(
+                        'input[name="rank"]:checked'
+                    ).value,
+                    10
+                );
+
+
+            /*
+             * 最終結果を決める
+             */
+
+            const resultKey =
+                determineWinningItem(
+                    currentRank
+                );
+
+
+            /*
+             * ルーレットを長く回す
+             */
+
+            const spinCount =
+                35 +
+                Math.floor(
+                    Math.random() * 5
+                );
+
+
+            const domList = [
+                currentItemKey
+            ];
+
+
+            /*
+             * 回転中に表示するアイテム
+             */
+
+            for (
+                let i = 0;
+                i < spinCount;
+                i++
+            ) {
+
+                const randomItem =
+                    allItemKeys[
+                        Math.floor(
+                            Math.random() *
+                            allItemKeys.length
+                        )
+                    ];
+
+                domList.push(
+                    randomItem
+                );
+
+            }
+
+
+            /*
+             * 最後に本当の結果を入れる
+             */
+
+            domList.push(
+                resultKey
+            );
+
+
+            renderSlot(domList);
+
+
+            slotContainer.style.transform =
+                "translateY(0px)";
+
+            slotContainer.classList.add(
+                "is-spinning-fast"
+            );
+
+
+            const targetY =
+                (domList.length - 1) *
+                itemHeight;
+
+
+            const duration = 3200;
+
+            let startTime = null;
+
+            let lastTickIndex = 0;
+
+
+            /*
+             * アニメーション
+             */
+
+            function animate(currentTime) {
+
+                if (!startTime) {
+
+                    startTime =
+                        currentTime;
+
+                }
+
+
+                const elapsed =
+                    currentTime -
+                    startTime;
+
+
+                let progress =
+                    elapsed /
+                    duration;
+
+
+                if (progress > 1) {
+
+                    progress = 1;
+
+                }
+
+
+                /*
+                 * 最初は速く、
+                 * 最後はゆっくり
+                 */
+
+                const ease =
+                    1 -
+                    Math.pow(
+                        1 - progress,
+                        4
+                    );
+
+
+                const currentY =
+                    targetY * ease;
+
+
+                slotContainer.style.transform =
+                    `translateY(-${currentY}px)`;
+
+
+                /*
+                 * 効果音
+                 */
+
+                const currentIndex =
+                    Math.floor(
+                        currentY /
+                        itemHeight
+                    );
+
+
+                if (
+                    currentIndex >
+                    lastTickIndex &&
+                    progress < 1
+                ) {
+
+                    lastTickIndex =
+                        currentIndex;
+
+                    playTickSound();
+
+                }
+
+
+                /*
+                 * 終盤でぼかしを解除
+                 */
+
+                if (
+                    progress > 0.8 &&
+                    slotContainer.classList.contains(
+                        "is-spinning-fast"
+                    )
+                ) {
+
+                    slotContainer.classList.remove(
+                        "is-spinning-fast"
+                    );
+
+                }
+
+
+                /*
+                 * まだ回っている
+                 */
+
+                if (progress < 1) {
+
+                    requestAnimationFrame(
+                        animate
+                    );
+
+                }
+
+                /*
+                 * 結果表示
+                 */
+
+                else {
+
+                    currentItemKey =
+                        resultKey;
+
+
+                    renderSlot([
+                        currentItemKey
+                    ]);
+
+
+                    slotContainer.style.transform =
+                        "translateY(0px)";
+
+
+                    playFanfareSound();
+
+
+                    isSpinning = false;
+
+                    startBtn.disabled =
+                        false;
+
+
+                    radios.forEach(
+                        radio => {
+                            radio.disabled =
+                                false;
+                        }
+                    );
+
+                }
+
+            }
+
+
+            requestAnimationFrame(
+                animate
+            );
+
+        }
+
+
+        /*
+         * 初期表示
+         */
+
+        init();
+
+
+        /*
+         * SPINボタン
+         */
+
+        startBtn.addEventListener(
+            "click",
+            startRoulette
+        );
+
+    </script>
+
+</body>
+</html>
+```
